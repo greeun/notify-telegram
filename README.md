@@ -28,7 +28,7 @@ Claude Code 작업 완료 또는 사용자 입력 대기 시 텔레그램으로 
 ```bash
 export TELEGRAM_BOT_TOKEN="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
 export TELEGRAM_CHAT_ID="123456789"
-# export CLAUDE_TELEGRAM_NOTIFY_ENABLED="false"  # 비활성화 시
+# export CLAUDE_TELEGRAM_NOTIFY_ENABLED=false  # 비활성화 시
 ```
 
 적용:
@@ -119,7 +119,7 @@ python3 ~/.claude/skills/telegram-notifier/scripts/send_telegram.py "제목" "�
 | `CLAUDE_TELEGRAM_NOTIFY_ENABLED` | `false`로 설정 시 비활성화 | `true` |
 | `TELEGRAM_DEBUG` | 디버그 모드 활성화 | (미설정) |
 
-> **비활성화**: `export CLAUDE_TELEGRAM_NOTIFY_ENABLED="false"`
+> **비활성화**: `export CLAUDE_TELEGRAM_NOTIFY_ENABLED=false`
 
 ## 디버그 모드
 
