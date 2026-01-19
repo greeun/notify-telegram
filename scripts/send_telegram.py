@@ -97,8 +97,8 @@ def debug_hook_input(hook_data: dict):
 
 
 if __name__ == "__main__":
-    # Check if notifications are enabled
-    if os.environ.get("CLAUDE_TELEGRAM_NOTIFY_ENABLED") != "1":
+    # Check if notifications are enabled (default: true)
+    if os.environ.get("CLAUDE_TELEGRAM_NOTIFY_ENABLED", "true").lower() == "false":
         sys.exit(0)
 
     debug = os.environ.get("TELEGRAM_DEBUG")

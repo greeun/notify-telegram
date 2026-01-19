@@ -13,12 +13,11 @@ Claude Code 작업 완료 또는 사용자 입력 필요 시 텔레그램으로 
 
 ```bash
 # ~/.zshrc 또는 ~/.bashrc에 추가
-export CLAUDE_TELEGRAM_NOTIFY_ENABLED="1"
 export TELEGRAM_BOT_TOKEN="your_bot_token"
 export TELEGRAM_CHAT_ID="your_chat_id"
 ```
 
-> `CLAUDE_TELEGRAM_NOTIFY_ENABLED=1`이 없으면 알림이 발송되지 않습니다.
+> 비활성화: `export CLAUDE_TELEGRAM_NOTIFY_ENABLED="false"`
 
 봇 토큰/채팅 ID가 없다면: [references/setup-guide.md](references/setup-guide.md) 참조
 

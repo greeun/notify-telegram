@@ -26,9 +26,9 @@ Claude Code 작업 완료 또는 사용자 입력 대기 시 텔레그램으로 
 `~/.zshrc` 또는 `~/.bashrc`에 추가:
 
 ```bash
-export CLAUDE_TELEGRAM_NOTIFY_ENABLED="1"
 export TELEGRAM_BOT_TOKEN="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
 export TELEGRAM_CHAT_ID="123456789"
+# export CLAUDE_TELEGRAM_NOTIFY_ENABLED="false"  # 비활성화 시
 ```
 
 적용:
@@ -112,14 +112,14 @@ python3 ~/.claude/skills/telegram-notifier/scripts/send_telegram.py "제목" "�
 
 ## 환경 변수
 
-| 변수명 | 설명 | 예시 |
-|--------|------|------|
-| `CLAUDE_TELEGRAM_NOTIFY_ENABLED` | `1`이어야 알림 발송 (필수) | `1` |
-| `TELEGRAM_BOT_TOKEN` | BotFather에서 발급받은 토큰 | `1234567890:ABC...` |
-| `TELEGRAM_CHAT_ID` | 알림 받을 채팅 ID | `123456789` |
-| `TELEGRAM_DEBUG` | 디버그 모드 활성화 (선택) | `1` |
+| 변수명 | 설명 | 기본값 |
+|--------|------|--------|
+| `TELEGRAM_BOT_TOKEN` | BotFather에서 발급받은 토큰 | (필수) |
+| `TELEGRAM_CHAT_ID` | 알림 받을 채팅 ID | (필수) |
+| `CLAUDE_TELEGRAM_NOTIFY_ENABLED` | `false`로 설정 시 비활성화 | `true` |
+| `TELEGRAM_DEBUG` | 디버그 모드 활성화 | (미설정) |
 
-> **참고**: `CLAUDE_TELEGRAM_NOTIFY_ENABLED=1`이 설정되어 있지 않으면 스킬이 설치되어 있어도 알림이 발송되지 않습니다.
+> **비활성화**: `export CLAUDE_TELEGRAM_NOTIFY_ENABLED="false"`
 
 ## 디버그 모드
 
