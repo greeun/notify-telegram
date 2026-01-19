@@ -2,6 +2,61 @@
 
 Claude Code 작업 완료 또는 사용자 입력 대기 시 텔레그램으로 자동 알림을 보내는 스킬입니다.
 
+## 워크플로우 비교
+
+<table>
+<tr>
+<td align="center"><strong>❌ 기존 방식</strong></td>
+<td align="center"><strong>✅ 알림 적용 후</strong></td>
+</tr>
+<tr>
+<td>
+
+```mermaid
+flowchart TB
+    A1[Claude Code 실행] --> A2[화면 앞 대기]
+    A2 --> A3[계속 확인...]
+    A3 --> A4[완료 확인]
+
+    style A1 fill:#ef4444,color:#fff
+    style A2 fill:#ef4444,color:#fff
+    style A3 fill:#ef4444,color:#fff
+    style A4 fill:#ef4444,color:#fff
+```
+
+</td>
+<td>
+
+```mermaid
+flowchart TB
+    B1[Claude Code 실행] --> B2[다른 작업]
+    B2 --> B3[📱 텔레그램 알림]
+    B3 --> B4[복귀]
+
+    style B1 fill:#10b981,color:#fff
+    style B2 fill:#10b981,color:#fff
+    style B3 fill:#10b981,color:#fff
+    style B4 fill:#10b981,color:#fff
+```
+
+</td>
+</tr>
+</table>
+
+## 시스템 구조
+
+```mermaid
+flowchart LR
+    A[Claude Code] -->|Notification Hook| B[send_telegram.py]
+    B -->|HTTP POST| C[Telegram Bot API]
+    C -->|Push| D[📱 사용자 폰]
+
+    style A fill:#6366f1,color:#fff
+    style B fill:#10b981,color:#fff
+    style C fill:#3b82f6,color:#fff
+    style D fill:#f59e0b,color:#fff
+```
+
 ## 설치
 
 ### 1. 텔레그램 봇 생성
