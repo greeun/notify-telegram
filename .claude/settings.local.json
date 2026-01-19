@@ -12,7 +12,8 @@
       "Bash(printf:*)",
       "Bash(echo:*)",
       "Bash(export CLAUDE_TELEGRAM_NOTIFY_ENABLED=1)",
-      "Bash(export CLAUDE_TELEGRAM_NOTIFY_ENABLED=\"false\")"
+      "Bash(export CLAUDE_TELEGRAM_NOTIFY_ENABLED=\"false\")",
+      "Bash(git push)"
     ]
   },
   "enableAllProjectMcpServers": true,
