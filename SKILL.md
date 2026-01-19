@@ -32,7 +32,7 @@ export TELEGRAM_CHAT_ID="your_chat_id"
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/skills/telegram-notifier/scripts/send_telegram.py \"$CLAUDE_NOTIFICATION_TITLE\" \"$CLAUDE_NOTIFICATION_MESSAGE\""
+            "command": "python3 ~/.claude/skills/telegram-notifier/scripts/send_telegram.py"
           }
         ]
       }
@@ -41,15 +41,16 @@ export TELEGRAM_CHAT_ID="your_chat_id"
 }
 ```
 
-## 알림 발생 시점
+> **참고**: Claude Code는 stdin을 통해 JSON으로 알림 정보를 전달합니다.
 
-Claude Code는 다음 상황에서 Notification hook을 트리거합니다:
+## 알림 유형
 
-| 상황 | 알림 제목 예시 |
-|------|---------------|
-| 작업 완료 | "Task completed" |
-| 사용자 입력 대기 | "Waiting for input" |
-| 오류 발생 | "Error occurred" |
+| 유형 | 제목 | 설명 |
+|------|------|------|
+| `permission_prompt` | 🔐 권한 요청 | 명령어 실행 권한 요청 |
+| `idle_prompt` | ⏳ 입력 대기 | 사용자 응답 대기 중 |
+| `auth_success` | ✅ 인증 성공 | 인증 완료 |
+| `elicitation_dialog` | 💬 추가 정보 필요 | 추가 입력 필요 |
 
 ## 수동 알림 테스트
 
@@ -64,3 +65,4 @@ python3 ~/.claude/skills/telegram-notifier/scripts/send_telegram.py "테스트" 
 | 알림 안 옴 | `echo $TELEGRAM_BOT_TOKEN` 확인 |
 | 권한 오류 | 봇이 채팅방에 추가되었는지 확인 |
 | Hook 미작동 | `~/.claude/settings.json` 문법 확인 |
+| 디버그 모드 | `export TELEGRAM_DEBUG=1` 설정 후 확인 |

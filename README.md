@@ -48,7 +48,7 @@ source ~/.zshrc
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/skills/telegram-notifier/scripts/send_telegram.py \"$CLAUDE_NOTIFICATION_TITLE\" \"$CLAUDE_NOTIFICATION_MESSAGE\""
+            "command": "python3 ~/.claude/skills/telegram-notifier/scripts/send_telegram.py"
           }
         ]
       }
@@ -57,17 +57,30 @@ source ~/.zshrc
 }
 ```
 
+> **참고**: Claude Code는 알림 정보를 stdin을 통해 JSON으로 전달합니다. 커맨드 라인 인자는 필요하지 않습니다.
+
 ## 사용법
 
 ### 자동 알림
 
 설정 완료 후 Claude Code가 다음 상황에서 자동으로 텔레그램 알림을 발송합니다:
 
-| 상황 | 설명 |
-|------|------|
-| 작업 완료 | 요청한 작업이 완료되었을 때 |
-| 사용자 입력 대기 | 추가 정보나 확인이 필요할 때 |
-| 오류 발생 | 작업 중 오류가 발생했을 때 |
+| 알림 유형 | 제목 | 설명 |
+|-----------|------|------|
+| `permission_prompt` | 🔐 권한 요청 | 명령어 실행 권한 요청 (예: git push) |
+| `idle_prompt` | ⏳ 입력 대기 | 60초 이상 사용자 응답 대기 |
+| `auth_success` | ✅ 인증 성공 | 인증 완료 알림 |
+| `elicitation_dialog` | 💬 추가 정보 필요 | MCP 도구가 추가 입력 요청 |
+
+예시 알림 메시지:
+```
+🤖 *Claude Code*
+
+*🔐 권한 요청*
+
+git push - Push current branch to remote
+Do you want to proceed?
+```
 
 ### 수동 알림 테스트
 
@@ -102,3 +115,14 @@ python3 ~/.claude/skills/telegram-notifier/scripts/send_telegram.py "제목" "�
 |--------|------|------|
 | `TELEGRAM_BOT_TOKEN` | BotFather에서 발급받은 토큰 | `1234567890:ABC...` |
 | `TELEGRAM_CHAT_ID` | 알림 받을 채팅 ID | `123456789` |
+| `TELEGRAM_DEBUG` | 디버그 모드 활성화 (선택) | `1` |
+
+## 디버그 모드
+
+문제 해결을 위해 Claude Code가 전달하는 데이터를 확인하려면:
+
+```bash
+export TELEGRAM_DEBUG=1
+```
+
+설정 후 알림 발생 시 터미널에 hook 입력 JSON이 출력됩니다.
