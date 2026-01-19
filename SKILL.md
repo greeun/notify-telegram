@@ -17,7 +17,7 @@ export TELEGRAM_BOT_TOKEN="your_bot_token"
 export TELEGRAM_CHAT_ID="your_chat_id"
 ```
 
-> 비활성화: `export CLAUDE_TELEGRAM_NOTIFY_ENABLED="false"`
+> 비활성화: `export CLAUDE_TELEGRAM_NOTIFY_ENABLED=false`
 
 봇 토큰/채팅 ID가 없다면: [references/setup-guide.md](references/setup-guide.md) 참조
 
