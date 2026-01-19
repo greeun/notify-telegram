@@ -16,6 +16,10 @@ def send_telegram(title: str, message: str) -> bool:
         print("Error: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set", file=sys.stderr)
         return False
 
+    # Handle empty values
+    title = title.strip() if title else "Notification"
+    message = message.strip() if message else "Claude Code event triggered"
+
     # Format message
     text = f"🤖 *Claude Code*\n\n*{title}*\n{message}"
 
@@ -43,12 +47,14 @@ def send_telegram(title: str, message: str) -> bool:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: send_telegram.py <title> <message>", file=sys.stderr)
-        sys.exit(1)
-
-    title = sys.argv[1]
-    message = sys.argv[2]
+    # Try command line args first, then environment variables
+    if len(sys.argv) >= 3:
+        title = sys.argv[1]
+        message = sys.argv[2]
+    else:
+        # Read from Claude Code hook environment variables
+        title = os.environ.get("CLAUDE_NOTIFICATION_TITLE", "")
+        message = os.environ.get("CLAUDE_NOTIFICATION_MESSAGE", "")
 
     success = send_telegram(title, message)
     sys.exit(0 if success else 1)
