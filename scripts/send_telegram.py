@@ -14,6 +14,7 @@ Claude Code Notification hooks receive JSON via stdin:
 
 import os
 import sys
+import re
 import urllib.request
 import urllib.parse
 import json
@@ -105,6 +106,14 @@ def debug_hook_input(hook_data: dict):
     print(json.dumps(hook_data, indent=2, ensure_ascii=False), file=sys.stderr)
     print("=========================", file=sys.stderr)
 
+    # Also save to file for later inspection
+    debug_file = "/tmp/telegram_hook_debug.json"
+    try:
+        with open(debug_file, "w", encoding="utf-8") as f:
+            json.dump(hook_data, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
 
 def read_tool_context() -> dict:
     """Read tool context saved by PreToolUse hook."""
@@ -115,6 +124,148 @@ def read_tool_context() -> dict:
     except Exception as e:
         print(f"Warning: Failed to read tool context: {e}", file=sys.stderr)
     return {}
+
+
+def read_last_assistant_message(transcript_path: str, max_lines: int = 50) -> str:
+    """Read Claude's last output from transcript file.
+
+    Extracts the last assistant message to show what Claude asked/said
+    before waiting for user input.
+
+    Args:
+        transcript_path: Path to the transcript JSONL file
+        max_lines: Maximum number of lines to include in the summary
+
+    Returns:
+        Summarized last assistant message, or empty string if not found
+    """
+    if not transcript_path or not os.path.exists(transcript_path):
+        return ""
+
+    try:
+        last_assistant_content = ""
+
+        with open(transcript_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                    # Look for assistant messages
+                    if entry.get("type") == "assistant":
+                        message = entry.get("message", {})
+                        content = message.get("content", [])
+
+                        # Extract text content from the message
+                        text_parts = []
+                        for item in content:
+                            if isinstance(item, dict) and item.get("type") == "text":
+                                text_parts.append(item.get("text", ""))
+                            elif isinstance(item, str):
+                                text_parts.append(item)
+
+                        if text_parts:
+                            last_assistant_content = "\n".join(text_parts)
+                except json.JSONDecodeError:
+                    continue
+
+        if not last_assistant_content:
+            return ""
+
+        # Summarize the content: take first and last parts if too long
+        lines = last_assistant_content.strip().split("\n")
+
+        # Filter out empty lines and very short lines
+        lines = [l for l in lines if l.strip()]
+
+        if len(lines) <= max_lines:
+            # Short enough, return as-is (truncate individual lines if needed)
+            result_lines = []
+            for line in lines:
+                if len(line) > 100:
+                    result_lines.append(line[:100] + "...")
+                else:
+                    result_lines.append(line)
+            return "\n".join(result_lines)
+
+        # Too long: take first few lines, ellipsis, last few lines
+        head_lines = 5
+        tail_lines = 10
+
+        result = []
+        for line in lines[:head_lines]:
+            if len(line) > 100:
+                result.append(line[:100] + "...")
+            else:
+                result.append(line)
+
+        result.append("...")
+
+        for line in lines[-tail_lines:]:
+            if len(line) > 100:
+                result.append(line[:100] + "...")
+            else:
+                result.append(line)
+
+        return "\n".join(result)
+
+    except Exception as e:
+        print(f"Warning: Failed to read transcript: {e}", file=sys.stderr)
+        return ""
+
+
+def read_skill_description(skill_name: str) -> str:
+    """Read skill description from SKILL.md file.
+
+    Searches in common skill locations:
+    - ~/.claude/skills/<skill-name>/SKILL.md
+    - ~/.claude/plugins/cache/<org>/<plugin>/<version>/skills/<skill-name>/SKILL.md
+    """
+    skill_dirs = [
+        os.path.expanduser(f"~/.claude/skills/{skill_name}"),
+    ]
+
+    # If skill name contains ':', it might be a plugin skill like "superpowers:brainstorming"
+    if ':' in skill_name:
+        plugin, skill = skill_name.split(':', 1)
+        skill_dirs.insert(0, os.path.expanduser(f"~/.claude/skills/{plugin}"))
+
+        # Search plugins cache: ~/.claude/plugins/cache/<org>/<plugin>/<version>/skills/<skill>/
+        plugins_cache = os.path.expanduser("~/.claude/plugins/cache")
+        if os.path.exists(plugins_cache):
+            for org_dir in os.listdir(plugins_cache):
+                org_path = os.path.join(plugins_cache, org_dir)
+                if not os.path.isdir(org_path):
+                    continue
+                for plugin_dir in os.listdir(org_path):
+                    if plugin in plugin_dir:
+                        plugin_path = os.path.join(org_path, plugin_dir)
+                        if not os.path.isdir(plugin_path):
+                            continue
+                        # Find version directories
+                        for version_dir in os.listdir(plugin_path):
+                            skills_path = os.path.join(plugin_path, version_dir, "skills", skill)
+                            if os.path.isdir(skills_path):
+                                skill_dirs.append(skills_path)
+
+    for skill_dir in skill_dirs:
+        skill_md = os.path.join(skill_dir, "SKILL.md")
+        if os.path.exists(skill_md):
+            try:
+                with open(skill_md, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    # Extract description from frontmatter
+                    frontmatter_match = re.search(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
+                    if frontmatter_match:
+                        frontmatter = frontmatter_match.group(1)
+                        desc_match = re.search(r'description:\s*(.+?)(?:\n[a-z]|\n---|\Z)', frontmatter, re.DOTALL)
+                        if desc_match:
+                            return desc_match.group(1).strip()
+            except Exception:
+                pass
+
+    return ""
 
 
 def format_tool_info(tool_context: dict) -> str:
@@ -169,6 +320,36 @@ def format_tool_info(tool_context: dict) -> str:
                     q_texts.append(f"{prefix}{question_text}")
             if q_texts:
                 parts.append("```\n" + "\n".join(q_texts) + "\n```")
+    elif tool_name == "Skill":
+        # Show skill name, description, and standard prompt
+        skill_name = tool_input.get("skill", "")
+        args = tool_input.get("args", "")
+        if skill_name:
+            parts.append(f"*Use skill \"{skill_name}\"?*")
+            parts.append("_Claude may use instructions, code, or files from this Skill._\n")
+
+            # Try to read skill description from SKILL.md
+            description = read_skill_description(skill_name)
+            if description:
+                # Truncate if too long
+                if len(description) > 300:
+                    description = description[:300] + "..."
+                parts.append(f"{description}\n")
+
+            if args:
+                parts.append(f"_args: {args}_\n")
+
+            # Get cwd from tool context for option 2
+            cwd = tool_context.get("cwd", "")
+            cwd_short = os.path.basename(cwd) if cwd else ""
+
+            parts.append("*Do you want to proceed?*")
+            parts.append("1. Yes")
+            if cwd_short:
+                parts.append(f"2. Yes, and don't ask again for {skill_name} in {cwd_short}")
+            else:
+                parts.append(f"2. Yes, and don't ask again for {skill_name}")
+            parts.append("3. No")
     else:
         # For other tools, show tool name and params
         parts.append(f"```\n{tool_name}\n```")
@@ -211,17 +392,48 @@ if __name__ == "__main__":
             # Get Korean title based on notification type
             title = NOTIFICATION_TITLES.get(notification_type, f"📢 {notification_type or '알림'}")
 
-            # For permission_prompt, include tool context info + raw message (options)
+            # For permission_prompt, include tool context info + options
             preformatted = False
             if notification_type == "permission_prompt":
                 tool_context = read_tool_context()
                 tool_info = format_tool_info(tool_context)
-                if tool_info:
-                    # Combine tool info with raw message (contains options)
-                    message = f"{tool_info}\n\n{raw_message}" if raw_message else tool_info
-                    preformatted = True  # tool_info contains markdown
+
+                # Build options text dynamically from tool context
+                options_text = "\n\nDo you want to proceed?\n1. Yes\n"
+
+                # Generate "don't ask again" option from tool context
+                if tool_context:
+                    tool_input = tool_context.get("tool_input", {})
+                    cmd = tool_input.get("command", "")
+                    cwd = tool_context.get("cwd", "")
+
+                    # Extract short command (first part before pipe/redirect)
+                    short_cmd = cmd.split("|")[0].split(">")[0].split("2>&1")[0].strip()
+                    if len(short_cmd) > 50:
+                        short_cmd = short_cmd[:50] + "..."
+
+                    if short_cmd and cwd:
+                        options_text += f"2. Yes, and don't ask again for `{short_cmd}` in {cwd}\n"
+                    else:
+                        options_text += "2. Yes, and don't ask again\n"
                 else:
-                    message = raw_message
+                    options_text += "2. Yes, and don't ask again\n"
+
+                options_text += "3. No\n"
+
+                if tool_info:
+                    message = tool_info + options_text
+                    preformatted = True
+                else:
+                    message = (raw_message or "") + options_text
+            elif notification_type == "idle_prompt":
+                # For idle_prompt, show Claude's last output (the question asked)
+                transcript_path = hook_data.get("transcript_path", "")
+                last_output = read_last_assistant_message(transcript_path)
+                if last_output:
+                    message = last_output
+                else:
+                    message = raw_message or "Claude is waiting for your input"
             else:
                 message = raw_message
         else:

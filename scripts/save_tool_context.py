@@ -17,6 +17,7 @@ Claude Code PreToolUse hook input:
 """
 
 import sys
+import os
 import json
 
 CONTEXT_FILE = "/tmp/claude_tool_context.json"
@@ -47,6 +48,7 @@ def save_tool_context(hook_data: dict) -> None:
         "session_id": session_id,
         "tool_name": tool_name,
         "tool_input": tool_input,
+        "cwd": os.getcwd(),
     }
 
     try:
