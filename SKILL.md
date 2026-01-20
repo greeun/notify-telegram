@@ -28,6 +28,17 @@ export TELEGRAM_CHAT_ID="your_chat_id"
 ```json
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/skills/telegram-notifier/scripts/save_tool_context.py"
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "matcher": "",
@@ -43,7 +54,9 @@ export TELEGRAM_CHAT_ID="your_chat_id"
 }
 ```
 
-> **참고**: Claude Code는 stdin을 통해 JSON으로 알림 정보를 전달합니다.
+> **참고**:
+> - `PreToolUse`: 도구 실행 전 컨텍스트(명령어, 파일 등) 저장
+> - `Notification`: 저장된 컨텍스트 + 선택지 포함하여 알림 발송
 
 ## 알림 유형
 

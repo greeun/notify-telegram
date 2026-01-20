@@ -146,11 +146,19 @@ source ~/.zshrc
 🤖 Claude Code
 
 🔐 권한 요청
-
-Tool: Bash
+────────────────────
 git push origin main
+
 Push commits to remote
+
+Do you want to proceed?
+❯ 1. Yes
+  2. Yes, and don't ask again for this project
+  3. No
+────────────────────
 ```
+
+> **메시지 구성**: 명령어/파일 경로 + 설명 + 실제 선택지 표시
 
 ### 수동 알림 테스트
 
