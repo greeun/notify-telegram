@@ -141,27 +141,27 @@ def format_tool_info(tool_context: dict) -> str:
             # Truncate long commands
             if len(command) > 200:
                 command = command[:200] + "..."
-            parts.append(f"`{command}`")
+            parts.append(f"```\n{command}\n```")
         if description:
-            parts.append(f"{description}")
+            parts.append(f"_{description}_")
     elif tool_name == "Edit":
         file_path = tool_input.get("file_path", "")
         if file_path:
-            parts.append(f"`Edit: {file_path}`")
+            parts.append(f"```\nEdit: {file_path}\n```")
     elif tool_name == "Write":
         file_path = tool_input.get("file_path", "")
         if file_path:
-            parts.append(f"`Write: {file_path}`")
+            parts.append(f"```\nWrite: {file_path}\n```")
     elif tool_name == "Read":
         file_path = tool_input.get("file_path", "")
         if file_path:
-            parts.append(f"`Read: {file_path}`")
+            parts.append(f"```\nRead: {file_path}\n```")
     else:
         # For other tools, show tool name and params
-        parts.append(f"`{tool_name}`")
+        parts.append(f"```\n{tool_name}\n```")
         if tool_input:
             summary = ", ".join(f"{k}" for k in list(tool_input.keys())[:3])
-            parts.append(f"params: {summary}")
+            parts.append(f"_params: {summary}_")
 
     # Add confirmation prompt (options are shown in terminal)
     if parts:
