@@ -62,7 +62,7 @@ def send_telegram(title: str, message: str, preformatted: bool = False) -> bool:
 
     # Format message with separator lines
     separator = "─" * 20
-    text = f"🤖 *Claude Code*\n\n*{title}*\n{separator}\n{final_message}\n{separator}"
+    text = f"🔔 *Claude Code Notify*\n\n*{title}*\n{separator}\n{final_message}\n{separator}"
 
     # Prepare API request
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
