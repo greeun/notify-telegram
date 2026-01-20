@@ -1,6 +1,6 @@
 ---
 name: telegram-notifier
-description: Send Telegram notifications when tasks complete or user input is needed. Use when setting up notifications, configuring telegram alerts, or when user says "telegram notify", "send telegram", "notify me".
+description: Send Telegram notifications when tasks completed. Use when setting up notifications, configuring telegram alerts, or when user says "telegram notify", "send telegram", "notify me".
 ---
 
 # Telegram Notifier
