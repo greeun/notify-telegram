@@ -98,6 +98,17 @@ source ~/.zshrc
 ```json
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/skills/telegram-notifier/scripts/save_tool_context.py"
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "matcher": "",
@@ -113,7 +124,9 @@ source ~/.zshrc
 }
 ```
 
-> **참고**: Claude Code는 알림 정보를 stdin을 통해 JSON으로 전달합니다. 커맨드 라인 인자는 필요하지 않습니다.
+> **참고**:
+> - `PreToolUse` hook: 도구 실행 전 컨텍스트(명령어, 파일 경로 등)를 임시 파일에 저장
+> - `Notification` hook: 알림 발송 시 저장된 컨텍스트를 읽어 상세 정보 포함
 
 ## 사용법
 
@@ -130,12 +143,13 @@ source ~/.zshrc
 
 예시 알림 메시지:
 ```
-🤖 *Claude Code*
+🤖 Claude Code
 
-*🔐 권한 요청*
+🔐 권한 요청
 
-git push - Push current branch to remote
-Do you want to proceed?
+Tool: Bash
+git push origin main
+Push commits to remote
 ```
 
 ### 수동 알림 테스트
@@ -151,7 +165,8 @@ python3 ~/.claude/skills/telegram-notifier/scripts/send_telegram.py "제목" "�
 ├── SKILL.md                    # 스킬 정의
 ├── README.md                   # 이 문서
 ├── scripts/
-│   └── send_telegram.py        # 텔레그램 발송 스크립트
+│   ├── send_telegram.py        # 텔레그램 발송 스크립트 (Notification hook)
+│   └── save_tool_context.py    # 도구 컨텍스트 저장 (PreToolUse hook)
 └── references/
     └── setup-guide.md          # 상세 설정 가이드
 ```

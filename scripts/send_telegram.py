@@ -27,9 +27,17 @@ NOTIFICATION_TITLES = {
     "elicitation_dialog": "💬 추가 정보 필요",
 }
 
+TOOL_CONTEXT_FILE = "/tmp/claude_tool_context.json"
 
-def send_telegram(title: str, message: str) -> bool:
-    """Send a message to Telegram."""
+
+def send_telegram(title: str, message: str, preformatted: bool = False) -> bool:
+    """Send a message to Telegram.
+
+    Args:
+        title: Notification title
+        message: Notification message
+        preformatted: If True, message contains markdown and shouldn't be escaped
+    """
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
 
@@ -48,10 +56,12 @@ def send_telegram(title: str, message: str) -> bool:
             text = text.replace(char, f'\\{char}')
         return text
 
-    escaped_message = escape_markdown(message)
+    # Only escape if not preformatted
+    final_message = message if preformatted else escape_markdown(message)
 
-    # Format message
-    text = f"🤖 *Claude Code*\n\n*{title}*\n\n{escaped_message}"
+    # Format message with separator lines
+    separator = "─" * 20
+    text = f"🤖 *Claude Code*\n\n*{title}*\n{separator}\n{final_message}\n{separator}"
 
     # Prepare API request
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
@@ -96,12 +106,79 @@ def debug_hook_input(hook_data: dict):
     print("=========================", file=sys.stderr)
 
 
+def read_tool_context() -> dict:
+    """Read tool context saved by PreToolUse hook."""
+    try:
+        if os.path.exists(TOOL_CONTEXT_FILE):
+            with open(TOOL_CONTEXT_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Warning: Failed to read tool context: {e}", file=sys.stderr)
+    return {}
+
+
+def format_tool_info(tool_context: dict) -> str:
+    """Format tool information for notification message.
+
+    Format:
+    command or action
+    description
+
+    Do you want to proceed?
+    """
+    tool_name = tool_context.get("tool_name", "")
+    tool_input = tool_context.get("tool_input", {})
+
+    if not tool_name:
+        return ""
+
+    parts = []
+
+    if tool_name == "Bash":
+        command = tool_input.get("command", "")
+        description = tool_input.get("description", "")
+        if command:
+            # Truncate long commands
+            if len(command) > 200:
+                command = command[:200] + "..."
+            parts.append(f"`{command}`")
+        if description:
+            parts.append(f"{description}")
+    elif tool_name == "Edit":
+        file_path = tool_input.get("file_path", "")
+        if file_path:
+            parts.append(f"`Edit: {file_path}`")
+    elif tool_name == "Write":
+        file_path = tool_input.get("file_path", "")
+        if file_path:
+            parts.append(f"`Write: {file_path}`")
+    elif tool_name == "Read":
+        file_path = tool_input.get("file_path", "")
+        if file_path:
+            parts.append(f"`Read: {file_path}`")
+    else:
+        # For other tools, show tool name and params
+        parts.append(f"`{tool_name}`")
+        if tool_input:
+            summary = ", ".join(f"{k}" for k in list(tool_input.keys())[:3])
+            parts.append(f"params: {summary}")
+
+    # Add confirmation prompt (options are shown in terminal)
+    if parts:
+        parts.append("")
+        parts.append("터미널에서 응답해주세요.")
+
+    return "\n".join(parts)
+
+
 if __name__ == "__main__":
     # Check if notifications are enabled (default: true)
     if os.environ.get("CLAUDE_TELEGRAM_NOTIFY_ENABLED", "true").lower() == "false":
         sys.exit(0)
 
-    debug = os.environ.get("TELEGRAM_DEBUG")
+    debug = os.environ.get("CLAUDE_TELEGRAM_DEBUG")
+
+    preformatted = False
 
     # Priority 1: Command line arguments
     if len(sys.argv) >= 3:
@@ -113,6 +190,10 @@ if __name__ == "__main__":
 
         if debug:
             debug_hook_input(hook_data)
+            # Send debug info to Telegram
+            debug_msg = f"Hook data keys: {list(hook_data.keys())}\n\n"
+            debug_msg += f"Full data:\n{json.dumps(hook_data, indent=2, ensure_ascii=False)[:500]}"
+            send_telegram("🔧 DEBUG", debug_msg)
 
         if hook_data:
             # Extract notification type and message from hook JSON
@@ -121,11 +202,23 @@ if __name__ == "__main__":
 
             # Get Korean title based on notification type
             title = NOTIFICATION_TITLES.get(notification_type, f"📢 {notification_type or '알림'}")
-            message = raw_message
+
+            # For permission_prompt, include tool context info
+            preformatted = False
+            if notification_type == "permission_prompt":
+                tool_context = read_tool_context()
+                tool_info = format_tool_info(tool_context)
+                if tool_info:
+                    message = tool_info
+                    preformatted = True  # tool_info contains markdown
+                else:
+                    message = raw_message
+            else:
+                message = raw_message
         else:
             # Fallback: Environment variables (legacy support)
             title = os.environ.get("CLAUDE_NOTIFICATION_TITLE", "")
             message = os.environ.get("CLAUDE_NOTIFICATION_MESSAGE", "")
 
-    success = send_telegram(title, message)
+    success = send_telegram(title, message, preformatted=preformatted)
     sys.exit(0 if success else 1)
