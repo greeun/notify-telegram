@@ -163,11 +163,6 @@ def format_tool_info(tool_context: dict) -> str:
             summary = ", ".join(f"{k}" for k in list(tool_input.keys())[:3])
             parts.append(f"_params: {summary}_")
 
-    # Add confirmation prompt (options are shown in terminal)
-    if parts:
-        parts.append("")
-        parts.append("터미널에서 응답해주세요.")
-
     return "\n".join(parts)
 
 
@@ -203,13 +198,14 @@ if __name__ == "__main__":
             # Get Korean title based on notification type
             title = NOTIFICATION_TITLES.get(notification_type, f"📢 {notification_type or '알림'}")
 
-            # For permission_prompt, include tool context info
+            # For permission_prompt, include tool context info + raw message (options)
             preformatted = False
             if notification_type == "permission_prompt":
                 tool_context = read_tool_context()
                 tool_info = format_tool_info(tool_context)
                 if tool_info:
-                    message = tool_info
+                    # Combine tool info with raw message (contains options)
+                    message = f"{tool_info}\n\n{raw_message}" if raw_message else tool_info
                     preformatted = True  # tool_info contains markdown
                 else:
                     message = raw_message
