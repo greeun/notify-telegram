@@ -377,6 +377,10 @@ if __name__ == "__main__":
         # Priority 2: Read from stdin (Claude Code hook JSON)
         hook_data = read_stdin_json()
 
+        # Skip permission_prompt - handled by telegram-dialog/permission_handler.py
+        if hook_data.get("notification_type") == "permission_prompt":
+            sys.exit(0)
+
         if debug:
             debug_hook_input(hook_data)
             # Send debug info to Telegram
