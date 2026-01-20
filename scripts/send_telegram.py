@@ -156,6 +156,19 @@ def format_tool_info(tool_context: dict) -> str:
         file_path = tool_input.get("file_path", "")
         if file_path:
             parts.append(f"```\nRead: {file_path}\n```")
+    elif tool_name == "AskUserQuestion":
+        # Show actual question text
+        questions = tool_input.get("questions", [])
+        if questions:
+            q_texts = []
+            for q in questions:
+                question_text = q.get("question", "")
+                header = q.get("header", "")
+                if question_text:
+                    prefix = f"[{header}] " if header else ""
+                    q_texts.append(f"{prefix}{question_text}")
+            if q_texts:
+                parts.append("```\n" + "\n".join(q_texts) + "\n```")
     else:
         # For other tools, show tool name and params
         parts.append(f"```\n{tool_name}\n```")
