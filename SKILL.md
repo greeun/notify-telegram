@@ -1,7 +1,7 @@
 ---
 name: telegram-notifier
 description: Send Telegram notifications when tasks completed. Use when setting up notifications, configuring telegram alerts, or when user says "telegram notify", "send telegram", "notify me".
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Telegram Notifier
@@ -63,12 +63,12 @@ export TELEGRAM_CHAT_ID="your_chat_id"
 
 | 유형 | 제목 | 설명 |
 |------|------|------|
-| `permission_prompt` | 🔐 권한 요청 | **이 스킬은 처리하지 않고 건너뜀** (telegram-dialog 스킬 담당) |
+| `permission_prompt` | 🔐 권한 요청 | **이 스킬은 처리하지 않고 건너뜀** (아래 참고) |
 | `idle_prompt` | ⏳ 입력 대기 | 사용자 응답 대기 중 |
 | `auth_success` | ✅ 인증 성공 | 인증 완료 |
 | `elicitation_dialog` | 💬 추가 정보 필요 | 추가 입력 필요 |
 
-> **참고**: `permission_prompt`(권한 요청)는 원격 승인이 필요한 양방향 흐름이라 telegram-dialog의 `permission_handler.py`가 전담합니다. 이 스킬(send_telegram.py)은 해당 유형을 수신하면 즉시 종료합니다.
+> **참고**: `permission_prompt`(권한 요청)는 텔레그램에서 승인/거부를 되돌려받는 양방향 흐름이 필요합니다. 이 스킬은 단방향 알림만 다루므로 해당 유형을 수신하면 즉시 종료합니다 — 사용자가 조작할 수 없는 알림을 보내지 않기 위해서입니다.
 
 ## 수동 알림 테스트
 

@@ -380,7 +380,9 @@ if __name__ == "__main__":
         # Priority 2: Read from stdin (Claude Code hook JSON)
         hook_data = read_stdin_json()
 
-        # Skip permission_prompt - handled by telegram-dialog/permission_handler.py
+        # permission_prompt needs a two-way approval round trip, which this
+        # one-way notifier does not implement. Skip it rather than sending a
+        # notification the user cannot act on.
         if hook_data.get("notification_type") == "permission_prompt":
             sys.exit(0)
 
@@ -399,9 +401,8 @@ if __name__ == "__main__":
             # Get Korean title based on notification type
             title = NOTIFICATION_TITLES.get(notification_type, f"📢 {notification_type or '알림'}")
 
-            # permission_prompt is handled by telegram-dialog's
-            # permission_handler.py and is skipped earlier (see above), so only
-            # idle_prompt needs special handling here.
+            # permission_prompt exits earlier (see above), so idle_prompt is the
+            # only type still needing special handling here.
             if notification_type == "idle_prompt":
                 # For idle_prompt, show Claude's last output (the question asked)
                 transcript_path = hook_data.get("transcript_path", "")
