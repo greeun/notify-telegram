@@ -18,7 +18,6 @@ import re
 import urllib.request
 import urllib.parse
 import json
-import select
 
 # Notification type to Korean title mapping
 NOTIFICATION_TITLES = {
@@ -89,14 +88,18 @@ def send_telegram(title: str, message: str, preformatted: bool = False) -> bool:
 
 def read_stdin_json() -> dict:
     """Read JSON from stdin (Claude Code hook input)."""
-    # Check if there's data on stdin (non-blocking)
-    if select.select([sys.stdin], [], [], 0.1)[0]:
-        try:
+    try:
+        # Read stdin only when it is piped (a hook), not an interactive tty.
+        # A short select() timeout can miss hook JSON that arrives slightly
+        # late, so mirror save_tool_context.py and gate on isatty() instead.
+        if not sys.stdin.isatty():
             stdin_data = sys.stdin.read()
             if stdin_data.strip():
                 return json.loads(stdin_data)
-        except json.JSONDecodeError as e:
-            print(f"Warning: Failed to parse stdin JSON: {e}", file=sys.stderr)
+    except json.JSONDecodeError as e:
+        print(f"Warning: Failed to parse stdin JSON: {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"Warning: Failed to read stdin: {e}", file=sys.stderr)
     return {}
 
 
@@ -396,41 +399,10 @@ if __name__ == "__main__":
             # Get Korean title based on notification type
             title = NOTIFICATION_TITLES.get(notification_type, f"📢 {notification_type or '알림'}")
 
-            # For permission_prompt, include tool context info + options
-            preformatted = False
-            if notification_type == "permission_prompt":
-                tool_context = read_tool_context()
-                tool_info = format_tool_info(tool_context)
-
-                # Build options text dynamically from tool context
-                options_text = "\n\nDo you want to proceed?\n1. Yes\n"
-
-                # Generate "don't ask again" option from tool context
-                if tool_context:
-                    tool_input = tool_context.get("tool_input", {})
-                    cmd = tool_input.get("command", "")
-                    cwd = tool_context.get("cwd", "")
-
-                    # Extract short command (first part before pipe/redirect)
-                    short_cmd = cmd.split("|")[0].split(">")[0].split("2>&1")[0].strip()
-                    if len(short_cmd) > 50:
-                        short_cmd = short_cmd[:50] + "..."
-
-                    if short_cmd and cwd:
-                        options_text += f"2. Yes, and don't ask again for `{short_cmd}` in {cwd}\n"
-                    else:
-                        options_text += "2. Yes, and don't ask again\n"
-                else:
-                    options_text += "2. Yes, and don't ask again\n"
-
-                options_text += "3. No\n"
-
-                if tool_info:
-                    message = tool_info + options_text
-                    preformatted = True
-                else:
-                    message = (raw_message or "") + options_text
-            elif notification_type == "idle_prompt":
+            # permission_prompt is handled by telegram-dialog's
+            # permission_handler.py and is skipped earlier (see above), so only
+            # idle_prompt needs special handling here.
+            if notification_type == "idle_prompt":
                 # For idle_prompt, show Claude's last output (the question asked)
                 transcript_path = hook_data.get("transcript_path", "")
                 last_output = read_last_assistant_message(transcript_path)
